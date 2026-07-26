@@ -1,4 +1,5 @@
 import { AppSidebar } from "@/components/app-sidebar"
+import { ChatInterface } from "@/components/chat-interface"
 import {
   SidebarInset,
   SidebarProvider,
@@ -9,10 +10,7 @@ export default function ChatPage() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <div className="flex flex-1 flex-col gap-4 p-4">
-          <h1 className="text-2xl font-bold">Chat</h1>
-          <p className="text-muted-foreground">Chat interface coming soon.</p>
-        </div>
+        <ChatInterface />
       </SidebarInset>
     </SidebarProvider>
   )

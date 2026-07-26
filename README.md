@@ -40,6 +40,6 @@ Login: `admin@onecorestack.com` / `password`
 
 - `/login` — authentication
 - `/dashboard` — main workspace
-- `/chat` — AI chat interface (WIP)
-- `/configure` — configuration (WIP)
-- `/settings` — settings (WIP)
+- `/chat` — AI chat interface
+- `/configure` — configuration
+- `/settings` — settings
