@@ -1,8 +1,9 @@
 [variables]
 APP_PORT = "8000"
+PYTHON_VERSION = "3.13"
 
 [phases.setup]
-nixPkgs = ["python3", "gcc", "uv"]
+nixPkgs = ["python313", "gcc", "uv"]
 
 [phases.install]
 cmds = [
