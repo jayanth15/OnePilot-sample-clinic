@@ -1,105 +1,111 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
-  SearchIcon,
-  Attachment01Icon,
   AirplaneModeIcon,
-  CheckmarkCircle02Icon,
+  BubbleChatIcon,
 } from "@hugeicons/core-free-icons"
 import { Input } from "@/components/ui/input"
-import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 
-type Message = {
-  id: number
-  text: string
-  sent: boolean
-  time: string
-  read: boolean
-}
+const API = "http://localhost:8000"
 
-type Chat = {
+type Contact = {
   id: number
+  phone: string
   name: string
-  avatar: string
-  lastMessage: string
-  time: string
-  unread: number
-  online: boolean
-  messages: Message[]
+  last_message: string
 }
 
-const chats: Chat[] = [
-  {
-    id: 1,
-    name: "Alice Johnson",
-    avatar: "AJ",
-    lastMessage: "Sounds great! Let me know when you're free.",
-    time: "10:42",
-    unread: 2,
-    online: true,
-    messages: [
-      { id: 1, text: "Hey! How's it going?", sent: false, time: "10:30", read: true },
-      { id: 2, text: "Pretty good! Working on the new feature.", sent: true, time: "10:32", read: true },
-      { id: 3, text: "Oh nice! Which one?", sent: false, time: "10:33", read: true },
-      { id: 4, text: "The WhatsApp integration module.", sent: true, time: "10:35", read: true },
-      { id: 5, text: "That sounds exciting! Need any help?", sent: false, time: "10:36", read: true },
-      { id: 6, text: "I might need some UI feedback later.", sent: true, time: "10:38", read: true },
-      { id: 7, text: "Sounds great! Let me know when you're free.", sent: false, time: "10:42", read: true },
-    ],
-  },
-  {
-    id: 2,
-    name: "Bob Smith",
-    avatar: "BS",
-    lastMessage: "Sure, I'll check the logs.",
-    time: "09:15",
-    unread: 0,
-    online: false,
-    messages: [
-      { id: 1, text: "The deployment failed again.", sent: true, time: "09:10", read: true },
-      { id: 2, text: "What error are you seeing?", sent: false, time: "09:12", read: true },
-      { id: 3, text: "Something about missing env variables.", sent: true, time: "09:13", read: true },
-      { id: 4, text: "Sure, I'll check the logs.", sent: false, time: "09:15", read: true },
-    ],
-  },
-  {
-    id: 3,
-    name: "Charlie Davis",
-    avatar: "CD",
-    lastMessage: "Perfect, see you tomorrow!",
-    time: "Yesterday",
-    unread: 0,
-    online: true,
-    messages: [
-      { id: 1, text: "Are we still on for tomorrow?", sent: false, time: "Yesterday", read: true },
-      { id: 2, text: "Yes, 10 AM works for me.", sent: true, time: "Yesterday", read: true },
-      { id: 3, text: "Perfect, see you tomorrow!", sent: false, time: "Yesterday", read: true },
-    ],
-  },
-]
+type HistoryItem = {
+  role: string
+  content: string
+}
+
+type Appointment = {
+  id: number
+  appointment_number: string
+  patient_name: string
+  doctor_name: string
+  date: string
+  start_time: string
+  status: string
+}
 
 export function ChatInterface() {
-  const [selectedChat, setSelectedChat] = useState<Chat>(chats[0])
+  const [contacts, setContacts] = useState<Contact[]>([])
+  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [messages, setMessages] = useState<HistoryItem[]>([])
   const [input, setInput] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [aiPaused, setAiPaused] = useState(false)
+  const bottomRef = useRef<HTMLDivElement>(null)
 
-  function handleSend() {
-    if (!input.trim()) return
-    const msg: Message = {
-      id: selectedChat.messages.length + 1,
-      text: input,
-      sent: true,
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      read: false,
-    }
-    setSelectedChat({
-      ...selectedChat,
-      lastMessage: input,
-      time: msg.time,
-      messages: [...selectedChat.messages, msg],
-    })
+  useEffect(() => {
+    const token = localStorage.getItem("access_token")
+    const headers: Record<string, string> = {}
+    if (token) headers["Authorization"] = `Bearer ${token}`
+    fetch(`${API}/api/v1/contacts`, { headers })
+      .then((r) => r.json())
+      .then((data: Contact[]) => {
+        setContacts(data)
+        if (data.length > 0 && selectedId === null) {
+          setSelectedId(data[0].id)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    if (selectedId === null) return
+    const token = localStorage.getItem("access_token")
+    const headers: Record<string, string> = {}
+    if (token) headers["Authorization"] = `Bearer ${token}`
+    fetch(`${API}/api/v1/agent/history?contact_id=${selectedId}`, { headers })
+      .then((r) => r.json())
+      .then(setMessages)
+      .catch(() => setMessages([]))
+    fetch(`${API}/api/v1/appointments?contact_id=${selectedId}`, { headers })
+      .then((r) => r.json())
+      .then(setAppointments)
+      .catch(() => setAppointments([]))
+  }, [selectedId])
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages])
+
+  const selectedContact = contacts.find((c) => c.id === selectedId)
+
+  async function handleSend() {
+    if (!input.trim() || loading || selectedId === null) return
+    const text = input
     setInput("")
+    setMessages((prev) => [...prev, { role: "user", content: text }])
+    setLoading(true)
+    try {
+      const token = localStorage.getItem("access_token")
+      const headers: Record<string, string> = { "Content-Type": "application/json" }
+      if (token) headers["Authorization"] = `Bearer ${token}`
+      const res = await fetch(`${API}/api/v1/agent/chat`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ message: text, contact_id: selectedId, pause_ai: aiPaused }),
+      })
+      const data = await res.json()
+      setMessages((prev) => [...prev, { role: "assistant", content: data.reply }])
+      const ch = { ...headers }
+      fetch(`${API}/api/v1/contacts`, { headers: ch })
+        .then((r) => r.json())
+        .then(setContacts)
+        .catch(() => {})
+    } catch {
+      setMessages((prev) => [...prev, { role: "assistant", content: "Unable to connect to server." }])
+    } finally {
+      setLoading(false)
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -109,100 +115,167 @@ export function ChatInterface() {
     }
   }
 
+  const formatTime = (iso: string) => {
+    return new Date(iso).toLocaleTimeString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    })
+  }
+
+  const statusBadge = (status: string) => {
+    const s = status.toLowerCase()
+    const map: Record<string, string> = {
+      booked: "bg-blue-100 text-blue-800",
+      confirmed: "bg-green-100 text-green-800",
+      "checked-in": "bg-purple-100 text-purple-800",
+      completed: "bg-gray-100 text-gray-800",
+      cancelled: "bg-red-100 text-red-800",
+    }
+    return (
+      <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${map[s] || "bg-gray-100 text-gray-800"}`}>
+        {status}
+      </span>
+    )
+  }
+
   return (
     <div className="flex h-full">
       <div className="flex w-80 flex-col border-r bg-sidebar">
-        <div className="flex items-center justify-between border-b px-4 py-3">
-          <h2 className="font-semibold text-base">Chats</h2>
-        </div>
-        <div className="px-3 py-2">
-          <div className="relative">
-            <HugeiconsIcon icon={SearchIcon} strokeWidth={2} className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search or start new chat" className="pl-9" />
-          </div>
+        <div className="border-b px-4 py-3">
+          <h2 className="font-semibold text-base">WhatsApp Chats</h2>
         </div>
         <div className="flex-1 overflow-auto">
-          {chats.map((chat) => (
+          {contacts.map((c) => (
             <button
-              key={chat.id}
-              onClick={() => setSelectedChat(chat)}
+              key={c.id}
+              onClick={() => setSelectedId(c.id)}
               className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-colors ${
-                selectedChat.id === chat.id
+                selectedId === c.id
                   ? "bg-primary/12 font-medium"
                   : "hover:bg-accent/50"
               }`}
             >
               <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-                {chat.avatar}
+                {c.name ? c.name.charAt(0).toUpperCase() : "#"}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-sm">{chat.name}</span>
-                  <span className="text-xs text-muted-foreground">{chat.time}</span>
+                  <span className="font-medium text-sm truncate">
+                    {c.name || c.phone}
+                  </span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="truncate text-sm text-muted-foreground">{chat.lastMessage}</span>
-                  {chat.unread > 0 && (
-                    <span className="ml-auto flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
-                      {chat.unread}
-                    </span>
-                  )}
+                  <span className="truncate text-sm text-muted-foreground">
+                    {c.last_message || "\u2014"}
+                  </span>
                 </div>
               </div>
             </button>
           ))}
+          {contacts.length === 0 && (
+            <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+              No conversations yet.<br />Message the WhatsApp number to start.
+            </p>
+          )}
         </div>
       </div>
       <div className="flex flex-1 flex-col">
-        <div className="flex items-center gap-3 border-b px-6 py-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-            {selectedChat.avatar}
+        <div className="flex items-center justify-between border-b px-6 py-3">
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
+              {selectedContact
+                ? (selectedContact.name
+                    ? selectedContact.name.charAt(0).toUpperCase()
+                    : "#")
+                : "?"}
+            </div>
+            <div>
+              <p className="font-medium text-sm">
+                {selectedContact
+                  ? selectedContact.name || selectedContact.phone
+                  : "Select a chat"}
+              </p>
+              {selectedContact?.phone && (
+                <p className="text-xs text-muted-foreground font-mono">
+                  {selectedContact.phone}
+                </p>
+              )}
+            </div>
           </div>
-          <div>
-            <p className="font-medium text-sm">{selectedChat.name}</p>
-            <p className="text-xs text-muted-foreground">
-              {selectedChat.online ? "online" : "offline"}
-            </p>
-          </div>
+          {selectedContact && (
+            <div className="flex items-center gap-2">
+              <Button
+                size="xs"
+                variant={aiPaused ? "destructive" : "secondary"}
+                onClick={() => setAiPaused(!aiPaused)}
+              >
+                <HugeiconsIcon icon={BubbleChatIcon} strokeWidth={2} className="size-3 mr-1" />
+                {aiPaused ? "AI Paused" : "AI Active"}
+              </Button>
+            </div>
+          )}
         </div>
+
+        {selectedContact && appointments.length > 0 && (
+          <div className="border-b bg-muted/20 px-6 py-2">
+            <p className="text-xs font-semibold uppercase text-muted-foreground mb-1">Upcoming Appointments</p>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {appointments.map((a) => (
+                <div key={a.id} className="shrink-0 rounded-md border bg-background px-3 py-1.5 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{a.appointment_number}</span>
+                    {statusBadge(a.status)}
+                  </div>
+                  <p className="text-muted-foreground">{a.doctor_name} &middot; {a.date} {formatTime(a.start_time)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="flex-1 space-y-1 overflow-auto p-6">
-          {selectedChat.messages.map((msg) => (
-            <div key={msg.id} className={`flex ${msg.sent ? "justify-end" : "justify-start"}`}>
+          {messages.length === 0 && selectedId !== null && (
+            <p className="text-center text-sm text-muted-foreground mt-20">
+              No messages yet. Send a message to start.
+            </p>
+          )}
+          {messages.map((msg, i) => (
+            <div key={i} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
+              <div className="flex items-center gap-1 mb-0.5">
+                {msg.role !== "user" && (
+                  <span className={`text-[10px] font-medium uppercase ${msg.role === "assistant" ? "text-primary" : "text-muted-foreground"}`}>
+                    {msg.role === "assistant" ? "AI" : "Staff"}
+                  </span>
+                )}
+              </div>
               <div
                 className={`max-w-[70%] rounded-2xl px-4 py-2 text-sm ${
-                  msg.sent
+                  msg.role === "user"
                     ? "bg-primary text-primary-foreground rounded-br-md"
                     : "bg-muted rounded-bl-md"
                 }`}
               >
-                <p>{msg.text}</p>
-                <div className={`mt-1 flex items-center justify-end gap-1 ${msg.sent ? "" : "hidden"}`}>
-                  <span className="text-[10px] opacity-70">{msg.time}</span>
-                  <HugeiconsIcon
-                    icon={CheckmarkCircle02Icon}
-                    strokeWidth={2}
-                    className={`size-3.5 ${msg.read ? "text-blue-400" : "opacity-60"}`}
-                  />
-                </div>
+                <p>{msg.content}</p>
               </div>
             </div>
           ))}
+          <div ref={bottomRef} />
         </div>
         <div className="border-t px-4 py-3">
           <div className="flex items-center gap-2">
-            <button className="flex size-9 items-center justify-center rounded-full text-muted-foreground hover:bg-accent">
-              <HugeiconsIcon icon={Attachment01Icon} strokeWidth={2} className="size-5" />
-            </button>
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Type a message"
               className="flex-1"
+              disabled={loading || selectedId === null}
             />
             <button
               onClick={handleSend}
-              disabled={!input.trim()}
+              disabled={!input.trim() || loading || selectedId === null}
               className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-40"
             >
               <HugeiconsIcon icon={AirplaneModeIcon} strokeWidth={2} className="size-5" />

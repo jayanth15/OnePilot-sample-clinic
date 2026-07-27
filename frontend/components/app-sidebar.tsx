@@ -17,13 +17,26 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Logout03Icon, BubbleChatIcon, Settings01Icon, Settings02Icon, DashboardCircleIcon } from "@hugeicons/core-free-icons"
+import {
+  Logout03Icon,
+  BubbleChatIcon,
+  Settings01Icon,
+  Settings02Icon,
+  DashboardCircleIcon,
+  CalendarCheckIn01Icon,
+  UserMultipleIcon,
+  StethoscopeIcon,
+  FileCogIcon,
+} from "@hugeicons/core-free-icons"
 
 const navItems = [
   { title: "Dashboard", href: "/dashboard", icon: DashboardCircleIcon },
+  { title: "Appointments", href: "/appointments", icon: CalendarCheckIn01Icon },
+  { title: "Doctors", href: "/doctors", icon: StethoscopeIcon },
+  { title: "Patients", href: "/patients", icon: UserMultipleIcon },
   { title: "Chat", href: "/chat", icon: BubbleChatIcon },
-  { title: "Configure", href: "/configure", icon: Settings01Icon },
-  { title: "Settings", href: "/settings", icon: Settings02Icon },
+  { title: "Configure", href: "/configure", icon: FileCogIcon },
+  { title: "Settings", href: "/settings", icon: Settings01Icon },
 ]
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {

@@ -1,20 +1,28 @@
-"""FastAPI application factory."""
+from typing import Any
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import api_router
+from app.api.routes.health import health
+from app.api.routes.webhooks import gupshup_webhook
 from app.core.config import settings
+from app.core.database import init_db
+from app.core.lifespan import lifespan
+from app.core.logging import configure_logging
 
 
 def create_app() -> FastAPI:
+    configure_logging()
+
     application = FastAPI(
         title=settings.app_name,
         version=settings.app_version,
+        description="OnePilot WhatsApp AI assistant with session memory and weather lookup.",
         debug=settings.debug,
+        lifespan=lifespan,
     )
 
-    from app.core.database import init_db
     init_db()
     application.add_middleware(
         CORSMiddleware,
@@ -24,9 +32,11 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     application.include_router(api_router, prefix=settings.api_prefix)
+    application.add_api_route("/health", health, methods=["GET"], include_in_schema=False)
+    application.add_api_route("/webhook/gupshup", gupshup_webhook, methods=["POST"], include_in_schema=False)
 
     @application.get("/", tags=["service"])
-    async def service_info() -> dict[str, str]:
+    async def service_info() -> dict[str, Any]:
         return {
             "name": settings.app_name,
             "version": settings.app_version,
