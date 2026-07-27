@@ -7,11 +7,11 @@ nixPkgs = ["python313", "gcc", "uv"]
 
 [phases.install]
 cmds = [
-  "uv venv --copies /opt/venv",
-  ". /opt/venv/bin/activate && uv pip install -r requirements.txt",
+  "python -m venv --copies /opt/venv",
+  "uv pip install --python /opt/venv/bin/python -r requirements.txt",
   "mkdir -p data",
-  "uv run python -m app.seed",
+  "/opt/venv/bin/python -m app.seed"
 ]
 
 [start]
-cmd = ". /opt/venv/bin/activate && uv run uvicorn app:app --host 0.0.0.0 --port ${APP_PORT:-8000}"
+cmd = "/opt/venv/bin/python -m uvicorn app:app --host 0.0.0.0 --port ${APP_PORT:-8000}"
