@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import apiFetch from "@/lib/api"
+import apiFetch, { API_BASE } from "@/lib/api"
 
 type Appointment = {
   id: number
@@ -94,7 +94,7 @@ async function updateAppointment(appointmentId: number, status: string) {
   const ep = STATUS_ENDPOINTS[status]
   if (!ep) return
   const token = localStorage.getItem("access_token")
-  await fetch(`http://localhost:8000/api/v1/appointments/${appointmentId}/${ep}`, {
+  await fetch(`${API_BASE}/api/v1/appointments/${appointmentId}/${ep}`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,

@@ -9,7 +9,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 
-const API = "http://localhost:8000"
+import { API_BASE } from "@/lib/api"
 
 type Contact = {
   id: number
@@ -47,7 +47,7 @@ export function ChatInterface() {
     const token = localStorage.getItem("access_token")
     const headers: Record<string, string> = {}
     if (token) headers["Authorization"] = `Bearer ${token}`
-    fetch(`${API}/api/v1/contacts`, { headers })
+    fetch(`${API_BASE}/api/v1/contacts`, { headers })
       .then((r) => r.json())
       .then((data: Contact[]) => {
         setContacts(data)
@@ -63,11 +63,11 @@ export function ChatInterface() {
     const token = localStorage.getItem("access_token")
     const headers: Record<string, string> = {}
     if (token) headers["Authorization"] = `Bearer ${token}`
-    fetch(`${API}/api/v1/agent/history?contact_id=${selectedId}`, { headers })
+    fetch(`${API_BASE}/api/v1/agent/history?contact_id=${selectedId}`, { headers })
       .then((r) => r.json())
       .then(setMessages)
       .catch(() => setMessages([]))
-    fetch(`${API}/api/v1/appointments?contact_id=${selectedId}`, { headers })
+    fetch(`${API_BASE}/api/v1/appointments?contact_id=${selectedId}`, { headers })
       .then((r) => r.json())
       .then(setAppointments)
       .catch(() => setAppointments([]))
@@ -89,7 +89,7 @@ export function ChatInterface() {
       const token = localStorage.getItem("access_token")
       const headers: Record<string, string> = { "Content-Type": "application/json" }
       if (token) headers["Authorization"] = `Bearer ${token}`
-      const res = await fetch(`${API}/api/v1/agent/chat`, {
+      const res = await fetch(`${API_BASE}/api/v1/agent/chat`, {
         method: "POST",
         headers,
         body: JSON.stringify({ message: text, contact_id: selectedId, pause_ai: aiPaused }),
@@ -97,7 +97,7 @@ export function ChatInterface() {
       const data = await res.json()
       setMessages((prev) => [...prev, { role: "assistant", content: data.reply }])
       const ch = { ...headers }
-      fetch(`${API}/api/v1/contacts`, { headers: ch })
+      fetch(`${API_BASE}/api/v1/contacts`, { headers: ch })
         .then((r) => r.json())
         .then(setContacts)
         .catch(() => {})

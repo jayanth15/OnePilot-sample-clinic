@@ -7,7 +7,7 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar"
 
-const API = "http://localhost:8000"
+import { API_BASE } from "@/lib/api"
 
 type Contact = {
   id: number
@@ -30,7 +30,7 @@ export default function SettingsPage() {
   const [data, setData] = useState<SettingsData | null>(null)
 
   useEffect(() => {
-    fetch(`${API}/api/v1/settings`)
+    fetch(`${API_BASE}/api/v1/settings`)
       .then((r) => r.json())
       .then(setData)
       .catch(() => {})

@@ -1,4 +1,4 @@
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
 export async function apiFetch<T = unknown>(
   path: string,
@@ -18,7 +18,7 @@ export async function apiFetch<T = unknown>(
     headers["Authorization"] = `Bearer ${token}`
   }
 
-  const res = await fetch(`${API}${path}`, {
+  const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers,
   })

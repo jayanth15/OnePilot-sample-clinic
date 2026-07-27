@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import apiFetch from "@/lib/api"
+import apiFetch, { API_BASE } from "@/lib/api"
 
 type PatientDetail = {
   id: number
@@ -109,16 +109,24 @@ export default function PatientDetailPage() {
     }
   }
 
+  const STATUS_ENDPOINTS: Record<string, string> = {
+    confirmed: "confirm",
+    cancelled: "cancel",
+    "checked-in": "check-in",
+    completed: "complete",
+    "no-show": "no-show",
+  }
+
   async function changeAppointmentStatus(id: number, status: string) {
+    const ep = STATUS_ENDPOINTS[status]
+    if (!ep) return
     try {
       const token = localStorage.getItem("access_token")
-      await fetch(`http://localhost:8000/api/v1/appointments/${id}`, {
-        method: "PATCH",
+      await fetch(`${API_BASE}/api/v1/appointments/${id}/${ep}`, {
+        method: "POST",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ status }),
       })
       loadPatient()
     } catch {

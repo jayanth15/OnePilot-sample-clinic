@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import apiFetch from "@/lib/api"
+import apiFetch, { API_BASE } from "@/lib/api"
 
 type Appointment = {
   id: number
@@ -177,7 +177,7 @@ export default function AppointmentsPage() {
     setSubmitting(true)
     try {
       const token = localStorage.getItem("access_token")
-      await fetch("http://localhost:8000/api/v1/appointments", {
+      await fetch(`${API_BASE}/api/v1/appointments`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -208,7 +208,7 @@ export default function AppointmentsPage() {
     if (!ep) { alert(`Unknown status: ${status}`); return }
     try {
       const token = localStorage.getItem("access_token")
-      await fetch(`http://localhost:8000/api/v1/appointments/${id}/${ep}`, {
+      await fetch(`${API_BASE}/api/v1/appointments/${id}/${ep}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
