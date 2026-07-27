@@ -9,14 +9,10 @@ nixPkgs = ["python313", "gcc", "uv"]
 cmds = [
   "cd backend",
   "uv venv --copies /opt/venv",
-  ". /opt/venv/bin/activate",
-  "uv pip install -r requirements.txt",
+  ". /opt/venv/bin/activate && uv pip install -r requirements.txt",
+  "mkdir -p data",
+  "uv run python -m app.seed",
 ]
 
-[phases.start]
-cmds = [
-  "cd backend",
-  ". /opt/venv/bin/activate",
-  "uv run python -m app.seed",
-  "uv run uvicorn app:app --host 0.0.0.0 --port ${APP_PORT:-8000}",
-]
+[start]
+cmd = ". /opt/venv/bin/activate && cd backend && uv run uvicorn app:app --host 0.0.0.0 --port ${APP_PORT:-8000}"
