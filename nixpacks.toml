@@ -1,0 +1,21 @@
+[variables]
+APP_PORT = "8000"
+
+[phases.setup]
+nixPkgs = ["python3", "gcc", "uv"]
+
+[phases.install]
+cmds = [
+  "cd backend",
+  "uv venv --copies /opt/venv",
+  ". /opt/venv/bin/activate",
+  "uv pip install -r requirements.txt",
+]
+
+[phases.start]
+cmds = [
+  "cd backend",
+  ". /opt/venv/bin/activate",
+  "uv run python -m app.seed",
+  "uv run uvicorn app:app --host 0.0.0.0 --port ${APP_PORT:-8000}",
+]
